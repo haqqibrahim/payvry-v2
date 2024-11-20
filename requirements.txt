@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+python-dotenv
+pydantic[email]
+alembic
+streamlit
+phidata
+groq
+python-jose[cryptography]
+bcrypt==4.0.1
+passlib==1.7.4
+python-multipart
+email-validator
+aiohttp
+fastapi-mail
