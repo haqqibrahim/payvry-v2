@@ -16,7 +16,7 @@ app = FastAPI(
 Base.metadata.create_all(bind=engine)
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="Frontend/static"), name="static")
+app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 
 # Include routers
 app.include_router(
@@ -36,6 +36,14 @@ async def auth_page():
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_page():
     return FileResponse("Frontend/templates/dashboard.html")
+
+@app.get("/register_face", response_class=HTMLResponse)
+async def register_face_page():
+    return FileResponse("frontend/templates/register_face.html")
+
+@app.get("/verify_face", response_class=HTMLResponse)
+async def verify_face_page():
+    return FileResponse("Frontend/templates/verify_face.html")
 
 if __name__ == "__main__":
     import uvicorn

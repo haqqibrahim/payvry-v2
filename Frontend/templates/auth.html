@@ -124,6 +124,18 @@
     </div>
 
     <script>
+        // Add this at the start of your script
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('access_token');
+            const faceVerified = localStorage.getItem('face_verified');
+            
+            // If user is already authenticated and verified, go to dashboard
+            if (token && faceVerified) {
+                window.location.href = '/dashboard';
+                return;
+            }
+        });
+
         // Tab switching logic
         const loginTab = document.getElementById('loginTab');
         const signupTab = document.getElementById('signupTab');
@@ -205,11 +217,12 @@
                     }),
                 });
 
-                const data = await response.json();
                 if (response.ok) {
-                    localStorage.setItem('token', data.access_token);
-                    window.location.href = '/dashboard';
+                    const data = await response.json();
+                    localStorage.setItem('access_token', data.access_token);
+                    window.location.href = '/verify_face';
                 } else {
+                    const data = await response.json();
                     alert(data.detail || 'Login failed');
                 }
             } catch (error) {
@@ -249,12 +262,13 @@
                     }),
                 });
 
-                const data = await response.json();
                 if (response.ok) {
-                    loginForm.classList.add('hidden');
-                    signupForm.classList.add('hidden');
-                    otpForm.classList.remove('hidden');
+                    const data = await response.json();
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('is_new_user', 'true');
+                    window.location.href = '/register_face';
                 } else {
+                    const data = await response.json();
                     alert(data.detail || 'Signup failed');
                 }
             } catch (error) {

@@ -4,3 +4,9 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+uploads/
+uploads/*
+frontend/.next/
+frontend/node_modules/
+frontend/next.env.d.ts
+.env.local

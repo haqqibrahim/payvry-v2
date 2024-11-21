@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, ARRAY, Float
 from database import Base  # Import Base from database.py instead of creating new one
 from datetime import datetime
 
@@ -16,6 +16,7 @@ class User(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     reset_token = Column(String, unique=True, nullable=True)
     reset_token_expires = Column(DateTime, nullable=True)
+    face_encoding = Column(ARRAY(Float), nullable=True)
 
 class OTP(Base):
     __tablename__ = "otps"

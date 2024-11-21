@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Face</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex flex-col items-center justify-center py-12 px-4">
+        <div class="max-w-md w-full space-y-8">
+            <div class="text-center">
+                <h2 class="mt-6 text-3xl font-bold text-gray-900">Verify Your Face</h2>
+                <p class="mt-2 text-gray-600">Please look directly at the camera</p>
+            </div>
+
+            <div class="mt-8 space-y-6">
+                <div class="video-container">
+                    <video id="video" class="w-full h-64 bg-black rounded-lg" autoplay></video>
+                    <canvas id="canvas" class="hidden"></canvas>
+                </div>
+
+                <div class="flex justify-center">
+                    <button id="verifyBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center">
+                        <svg id="verifySpinner" class="hidden animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span id="verifyText">Verify Face</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const verifyBtn = document.getElementById('verifyBtn');
+        let stream = null;
+
+        function setButtonLoading(isLoading) {
+            const verifyBtn = document.getElementById('verifyBtn');
+            const verifySpinner = document.getElementById('verifySpinner');
+            const verifyText = document.getElementById('verifyText');
+            
+            verifyBtn.disabled = isLoading;
+            if (isLoading) {
+                verifySpinner.classList.remove('hidden');
+                verifyText.textContent = 'Processing Picture...';
+            } else {
+                verifySpinner.classList.add('hidden');
+                verifyText.textContent = 'Verify Face';
+            }
+        }
+
+        async function startVideo() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: "user",
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error("Error accessing camera:", err);
+                alert("Unable to access camera. Please ensure you've granted camera permissions.");
+            }
+        }
+
+        verifyBtn.addEventListener('click', async () => {
+            setButtonLoading(true);
+            
+            try {
+                const context = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                canvas.toBlob(async (blob) => {
+                    const formData = new FormData();
+                    formData.append('image', blob, 'face.jpg');
+
+                    try {
+                        // First, get user info
+                        const userResponse = await fetch('/api/v1/auth/me', {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                            }
+                        });
+                        
+                        if (!userResponse.ok) {
+                            throw new Error('Failed to get user info');
+                        }
+                        
+                        const userData = await userResponse.json();
+
+                        // Then verify face
+                        const response = await fetch('/api/v1/auth/verify-face', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                            },
+                            body: formData
+                        });
+
+                        if (response.ok) {
+                            // Stop the video stream
+                            if (stream) {
+                                stream.getTracks().forEach(track => track.stop());
+                            }
+                            // Store verification status
+                            localStorage.setItem('face_verified', 'true');
+                            
+                            // Show welcome message
+                            alert(`Hello ${userData.full_name}!`);
+                            
+                            window.location.href = '/dashboard';
+                        } else {
+                            const data = await response.json();
+                            alert(data.detail || 'Face verification failed');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('An error occurred during face verification');
+                    } finally {
+                        setButtonLoading(false);
+                    }
+                }, 'image/jpeg', 0.9);
+            } catch (error) {
+                console.error('Error capturing image:', error);
+                alert('An error occurred while capturing the image');
+                setButtonLoading(false);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('access_token');
+            const isNewUser = localStorage.getItem('is_new_user');
+            const faceVerified = localStorage.getItem('face_verified');
+            
+            if (!token) {
+                window.location.href = '/auth';
+                return;
+            }
+            
+            // If new user, go to register face
+            if (isNewUser) {
+                window.location.href = '/register_face';
+                return;
+            }
+            
+            // If already verified, go to dashboard
+            if (faceVerified) {
+                window.location.href = '/dashboard';
+                return;
+            }
+            
+            startVideo();
+        });
+    </script>
+</body>
+</html> 
