@@ -1,9 +1,7 @@
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from Auth import router as auth_router
 from database import engine, Base
-from Auth.models import User, OTP
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -12,11 +10,17 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust this to your frontend URL in production
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+)
+
 # Create database tables
 Base.metadata.create_all(bind=engine)
-
-# Mount static files
-app.mount("/static", StaticFiles(directory="Frontend/static"), name="static")
 
 # Include routers
 app.include_router(
@@ -28,14 +32,6 @@ app.include_router(
 @app.get("/")
 def read_root():
     return {"status": "healthy", "message": "API is running"}
-
-@app.get("/auth", response_class=HTMLResponse)
-async def auth_page():
-    return FileResponse("Frontend/templates/auth.html")
-
-@app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard_page():
-    return FileResponse("Frontend/templates/dashboard.html")
 
 if __name__ == "__main__":
     import uvicorn

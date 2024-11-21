@@ -11,9 +11,12 @@ class UserLogin(BaseModel):
     whatsapp_number: str
     password: str
 
+# Commenting out the OTPVerify schema
+'''
 class OTPVerify(BaseModel):
     whatsapp_number: str
     otp_code: str
+'''
 
 class Token(BaseModel):
     access_token: str

@@ -46,6 +46,8 @@ async def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)
     
+    # Commenting out the OTP generation and sending logic
+    '''
     # Generate and send OTP
     otp = generate_otp()
     db_otp = models.OTP(
@@ -58,10 +60,12 @@ async def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     
     # Send OTP via WhatsApp
     await send_whatsapp(formatted_whatsapp, message=otp)
+    '''
     
     return db_user
 
-@router.post("/verify-otp")
+# Commenting out the verify-otp endpoint
+'''
 @router.post("/verify-otp")
 async def verify_otp(otp_data: schemas.OTPVerify, db: Session = Depends(get_db)):
     # Format the phone number first
@@ -91,6 +95,7 @@ async def verify_otp(otp_data: schemas.OTPVerify, db: Session = Depends(get_db))
     db.commit()
     
     return {"message": "OTP verified successfully"}
+'''
 
 @router.post("/login", response_model=schemas.Token)
 async def login(user_credentials: schemas.UserLogin, db: Session = Depends(get_db)):
@@ -105,12 +110,6 @@ async def login(user_credentials: schemas.UserLogin, db: Session = Depends(get_d
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect whatsapp number or password"
-        )
-    
-    if not user.is_verified:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Please verify your account first"
         )
     
     access_token = create_access_token(data={"sub": str(user.id)})

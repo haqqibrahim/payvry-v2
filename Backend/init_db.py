@@ -1,5 +1,5 @@
 from database import engine, Base
-from Auth.models import User, OTP  # Import all models
+from Auth.models import User  # Import only the User model
 
 def init_db():
     Base.metadata.drop_all(bind=engine)  # Drop all tables
