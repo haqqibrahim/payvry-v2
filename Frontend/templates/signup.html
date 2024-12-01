@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payvry - Sign Up</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <!-- Logo and Title -->
+            <div class="text-center">
+                <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
+                    Create Account
+                </h2>
+                <p class="mt-2 text-sm text-gray-600">
+                    Join Payvry's secure P2P platform
+                </p>
+            </div>
+
+            <!-- Sign Up Form -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">First Name</label>
+                        <input type="text" id="signupFirstName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Last Name</label>
+                        <input type="text" id="signupLastName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Middle Name</label>
+                        <input type="text" id="signupMiddleName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" id="signupEmail" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">WhatsApp Number</label>
+                        <input type="tel" id="signupWhatsapp" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="08012345678">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Mobile Number</label>
+                        <input type="tel" id="signupMobile" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="08012345678">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">BVN</label>
+                        <input type="text" id="signupBvn" maxlength="11" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your 11-digit BVN">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Password</label>
+                        <input type="password" id="signupPassword" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <button onclick="signup()" id="signupButton" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <span class="inline-flex items-center">
+                            <svg id="signupSpinner" class="hidden animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span id="signupText">Sign Up</span>
+                        </span>
+                    </button>
+                    <div class="text-center mt-4">
+                        <p class="text-sm text-gray-600">
+                            Already have an account? 
+                            <a href="/login" class="font-medium text-blue-600 hover:text-blue-500">
+                                Sign in
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+       
+
+        async function signup() {
+            const button = document.getElementById('signupButton');
+            const spinner = document.getElementById('signupSpinner');
+            const text = document.getElementById('signupText');
+            
+            // Enable loading state
+            button.disabled = true;
+            spinner.classList.remove('hidden');
+            text.textContent = 'Processing...';
+            
+            try {
+                const response = await fetch('/api/v1/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        first_name: document.getElementById('signupFirstName').value,
+                        last_name: document.getElementById('signupLastName').value,
+                        middle_name: document.getElementById('signupMiddleName').value,
+                        email: document.getElementById('signupEmail').value,
+                        whatsapp_number: document.getElementById('signupWhatsapp').value,
+                        mobile_number: document.getElementById('signupMobile').value,
+                        bvn: document.getElementById('signupBvn').value,
+                        password: document.getElementById('signupPassword').value
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('access_token', data.access_token);
+                    window.location.href = '/register_face';
+                } else {
+                    const data = await response.json();
+                    alert(data.detail || 'Signup failed');
+                }
+            } catch (error) {
+                alert('An error occurred during signup');
+            } finally {
+                // Reset loading state
+                button.disabled = false;
+                spinner.classList.add('hidden');
+                text.textContent = 'Sign Up';
+            }
+        }
+    </script>
+</body>
+</html>

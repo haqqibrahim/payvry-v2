@@ -12,6 +12,7 @@ from fastapi.responses import RedirectResponse
 from Utils.face_recognition import register_face, verify_face
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
+from Tools.create_account import create_bank_account, BankAccountCreationError
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -47,22 +48,26 @@ async def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
         existing_user = db.query(models.User).filter(
             (models.User.email == user.email) |
             (models.User.whatsapp_number == formatted_whatsapp) |
-            (models.User.mobile_number == formatted_mobile)
+            (models.User.mobile_number == formatted_mobile) |
+            (models.User.bvn == user.bvn)
         ).first()
         
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this email or phone number already exists"
+                detail="User with this email, phone number, or BVN already exists"
             )
         
         # Create new user with formatted numbers
         hashed_password = get_password_hash(user.password)
         db_user = models.User(
-            full_name=user.full_name,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            middle_name=user.middle_name,
             email=user.email,
             whatsapp_number=formatted_whatsapp,
             mobile_number=formatted_mobile,
+            bvn=user.bvn,
             password=hashed_password
         )
         db.add(db_user)
@@ -72,12 +77,10 @@ async def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
         # Create access token for the new user
         access_token = create_access_token(data={"sub": str(db_user.id)})
         
-        # Return token instead of redirecting
         return {"access_token": access_token, "token_type": "bearer"}
 
     except Exception as e:
-        # Log the error message
-        print(f"Error during signup: {str(e)}")  # Log the error
+        print(f"Error during signup: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred during signup"
@@ -119,11 +122,53 @@ async def register_user_face(
         
         # Update user in database with face encoding
         current_user.face_encoding = face_encoding
-        db.commit()
+        current_user.is_verified = True
         
-        return {"message": "Face registered successfully"}
+        # Create bank account for the verified user
+        try:
+            account_details = await create_bank_account(
+                str(current_user.id),
+                current_user.first_name,
+                current_user.middle_name,
+                current_user.last_name,
+                current_user.email,
+                current_user.bvn,
+                current_user.whatsapp_number
+            )
+            
+            # Update user with bank account details
+            current_user.account_number = account_details["account_number"]
+            current_user.bank_name = account_details["bank_name"]
+            current_user.bank_code = account_details["bank_code"]
+            current_user.payable_code = account_details["order_ref"]
+            
+            # Prepare welcome message with account details
+            welcome_message = (
+                f"Welcome to Payvry! Your account has been verified successfully.\n\n"
+                f"Your bank account details:\n"
+                f"Account Number: {account_details['account_number']}\n"
+                f"Bank: {account_details['bank_name']}\n"
+                f"Account Name: {account_details['account_name']}\n\n"
+                f"You can now start interacting with the Payvry AI."
+            )
+            
+        except BankAccountCreationError as e:
+            # Log the error but don't stop the verification process
+            print(f"Error creating bank account: {str(e)}")
+            welcome_message = "Welcome to Payvry! Your account has been verified successfully. However, there was an issue creating your bank account. Please contact support."
+        
+        db.commit()
+        print(current_user.whatsapp_number)
+        # Send WhatsApp message
+        await send_whatsapp(current_user.whatsapp_number, welcome_message)
+        
+        return {
+            "message": "Face registered successfully and account verified",
+            "account_details": account_details if 'account_details' in locals() else None
+        }
     
     except Exception as e:
+        print(f"Registration error: {str(e)}")  # Add detailed logging
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/verify-face")

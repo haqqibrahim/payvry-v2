@@ -1,9 +1,9 @@
 from database import engine, Base
-from Auth.models import User, OTP  # Import all models
+from Auth.models import User, OTP  # Import your models
 
 def init_db():
-    Base.metadata.drop_all(bind=engine)  # Drop all tables
-    Base.metadata.create_all(bind=engine)  # Create all tables
+    Base.metadata.drop_all(bind=engine)  # Drop existing tables
+    Base.metadata.create_all(bind=engine)  # Create new tables
 
 if __name__ == "__main__":
     init_db()
