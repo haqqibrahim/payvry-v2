@@ -33,10 +33,10 @@ async def create_bank_account(user_id: str, first_name: str, middle_name: str, l
     """
     try:
         # Get token from environment variable
-        token = os.getenv("PAYSTACK_SECRET_KEY")
+        token = os.getenv("FLW_SECRET_KEY")
         
         if not token:
-            raise BankAccountCreationError("Missing Paystack credentials")
+            raise BankAccountCreationError("Missing Flutterwave credentials")
 
         # Create dedicated account
         result = await create_flw_virtual_account(
@@ -71,7 +71,7 @@ async def create_bank_account(user_id: str, first_name: str, middle_name: str, l
         
         # Validate response
         if not all(account_details.values()):
-            raise BankAccountCreationError("Invalid response from Paystack")
+            raise BankAccountCreationError("Invalid response from Flutterwave")
             
         return account_details
         
@@ -93,9 +93,9 @@ async def create_flw_virtual_account(secret_key: str, email: str, bvn: str, firs
         requests.exceptions.RequestException: If the API request fails
     """
     url = 'https://api.flutterwave.com/v3/virtual-account-numbers'
-    
+    key='FLWSECK-8f7d6404041295af7f5ec678461e252c-1938bfb493bvt-X'
     headers = {
-        'Authorization': f'Bearer {secret_key}',
+        'Authorization': f'Bearer {key}',
         'Content-Type': 'application/json'
     }
     

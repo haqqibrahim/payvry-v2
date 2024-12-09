@@ -46,23 +46,25 @@ async def whatsapp_webhook(request: Request):
             )
             await send_whatsapp(phone_number=user_id, message=message)
             return {"status": "success", "message": "Signup message sent"}
-        
         # User has an account, create agent with user context
         agent_context = (
             f"User Information:\n"
             f"Name: {user_info['first_name']}\n"
             f"Current Balance: NGN {user_info['balance']:,.2f}\n"
             f"Account Number: {user_info['account_number']}\n"
-            f"Bank: {user_info['bank_name']}\n\n"
+            f"Bank: {user_info['bank_name']}\n\n",
+            f"User's ID: {user_info['id']}",
+            f"User's WhatsApp Number: {user_info['whatsapp_number']}\n\n",
             f"Recent Transactions: {len(user_info['transactions'])} in the last 7 days"
         )
+        
         
         # Create background task with user context
         asyncio.create_task(
             get_payvry_agent(
                 user_id=user_id,
                 message=text,
-                user_context=agent_context
+                user_context=agent_context,
             )
         )
 
@@ -84,40 +86,32 @@ async def handle_flutterwave_webhook(request: Request, db: Session = Depends(get
     # Get the webhook payload
     try:
         payload = await request.json()
-        print(payload)
+        print("Webhook payload:", payload)
         
-        # Verify it's a successful charge
         if payload["event"] == "charge.completed" and payload["data"]["status"] == "successful":
-            # Get transaction details
+            # Handle successful charge
             amount = float(payload["data"]["amount"])
             reference = payload["data"]["flw_ref"]
-            narration = payload["data"]["narration"]  # This is the sender's name
+            narration = payload["data"]["narration"]
             customer_email = payload["data"]["customer"]["email"]
             
-            # Find user by email
             user = db.query(User).filter(User.email == customer_email).first()
-            
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
             
-            # Create transaction record
             transaction = Transaction(
                 user_id=user.id,
                 amount=amount,
                 transaction_type="credit",
                 reference=reference,
-                narration=f"Transfer from {narration}",  # Using sender name from narration
+                narration=f"Transfer from {narration}",
                 status="successful"
             )
             
-            # Update user balance
             user.balance += amount
-            
-            # Save changes
             db.add(transaction)
             db.commit()
             
-            # Send notification to user
             notification_message = (
                 f"Credit Alert! 💰\n\n"
                 f"Amount: NGN {amount:,.2f}\n"
@@ -128,7 +122,49 @@ async def handle_flutterwave_webhook(request: Request, db: Session = Depends(get
             
             await send_whatsapp(user.whatsapp_number, notification_message)
             
-            return {"status": "success", "message": "Webhook processed successfully"}
+        elif payload["event"] == "transfer.completed":
+            # Handle transfer completion
+            transfer_data = payload["data"]
+            reference = transfer_data["reference"]
+            status = transfer_data["status"]
+            
+            transaction = db.query(Transaction).filter(
+                Transaction.reference == reference
+            ).first()
+            
+            if not transaction:
+                return {"status": "error", "message": "Transaction not found"}
+                
+            user = db.query(User).filter(User.id == transaction.user_id).first()
+            
+            if status == "SUCCESSFUL":
+                transaction.status = "successful"
+                notification = (
+                    f"Debit Alert - Transfer Successful! ✅\n\n"
+                    f"Amount: NGN {transaction.amount:,.2f}\n"
+                    f"To: {transaction.narration.replace('Transfer to ', '')}\n"
+                    f"Reference: {reference}\n"
+                    f"Current Balance: NGN {user.balance:,.2f}"
+                )
+            else:
+                # Refund failed transfer
+                transaction.status = "failed"
+                user.balance += transaction.amount
+                
+                notification = (
+                    f"Transfer Failed ❌\n\n"
+                    f"Amount: NGN {transaction.amount:,.2f}\n"
+                    f"To: {transaction.narration.replace('Transfer to ', '')}\n"
+                    f"Reference: {reference}\n"
+                    f"Reason: {transfer_data.get('complete_message', 'Unknown error')}\n"
+                    f"Your money has been refunded.\n"
+                    f"Current Balance: NGN {user.balance:,.2f}"
+                )
+            
+            db.commit()
+            await send_whatsapp(user.whatsapp_number, notification)
+            
+        return {"status": "success", "message": "Webhook processed successfully"}
             
     except Exception as e:
         print(f"Error processing webhook: {str(e)}")

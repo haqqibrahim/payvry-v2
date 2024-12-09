@@ -81,6 +81,8 @@ def get_user_account_info(whatsapp_number: str) -> dict:
             "balance": user.balance,
             "account_number": user.account_number,
             "bank_name": user.bank_name,
+            "id": user.id,
+            "whatsapp_number": user.whatsapp_number,
             "transactions": transaction_list
         }
     finally:

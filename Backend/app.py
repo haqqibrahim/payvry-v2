@@ -66,9 +66,16 @@ async def register_face_page(request: Request):
 async def verify_face_page(request: Request):
     return FileResponse("Frontend/templates/verify_face.html")
 
-@app.get("/yes")
-def get_msg():
-    print("We see you")
+@app.get("/authorize-transfer")
+async def authorize_transfer_page(
+    request: Request, 
+    amount: str, 
+    account_number: str, 
+    bank_code: str, 
+    bank_name: str, 
+    recipient_name: str
+):
+    return FileResponse("Frontend/templates/authorize.html")
 
 if __name__ == "__main__":
     import uvicorn

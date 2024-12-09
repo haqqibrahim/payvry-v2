@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Body, Form
 from sqlalchemy.orm import Session
 from database import get_db
 from . import models, schemas
@@ -13,6 +13,9 @@ from Utils.face_recognition import register_face, verify_face
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from Tools.create_account import create_bank_account, BankAccountCreationError
+from Tools.bank_verification_tool import verify_bank_account
+from Tools.bank_transfer_tool import bank_transfer_tool
+import json
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -199,4 +202,42 @@ async def verify_user_face(
 @router.get("/me", response_model=schemas.UserResponse)
 async def get_current_user_info(current_user: models.User = Depends(get_current_user)):
     return current_user
+
+
+@router.post("/authorize-transfer")
+async def authorize_transfer(
+    image: UploadFile = File(...),
+    transfer_details: str = Form(...),
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Read image data
+        image_data = await image.read()
+        # Parse JSON string into a Python dictionary
+        transfer_details = json.loads(transfer_details)
+        
+        # Verify face
+        if not current_user.face_encoding:
+            raise HTTPException(status_code=400, detail="No face registered for this user")
+        
+        # Verify face
+        is_match = await verify_face(image_data, current_user.face_encoding)
+        
+        if not is_match:
+            raise HTTPException(status_code=401, detail="Face verification failed")
+            
+        # If face verification successful, proceed with transfer
+        result = await bank_transfer_tool(
+            whatsapp_number=current_user.whatsapp_number,
+            account_bank=transfer_details["account_bank"],
+            account_number=transfer_details["account_number"],
+            amount=transfer_details["amount"],
+            recipient_name=transfer_details["recipient_name"]
+        )
+        
+        return json.loads(result)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
   
