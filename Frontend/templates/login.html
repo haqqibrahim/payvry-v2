@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payvry - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <!-- Logo and Title -->
+            <div class="text-center">
+                <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
+                    Welcome Back
+                </h2>
+                <p class="mt-2 text-sm text-gray-600">
+                    Sign in to your Payvry account
+                </p>
+            </div>
+
+            <!-- Login Form -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">WhatsApp Number</label>
+                        <input type="tel" id="loginWhatsapp" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="08012345678">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Password</label>
+                        <input type="password" id="loginPassword" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <button onclick="login()" id="loginButton" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <span class="inline-flex items-center">
+                            <svg id="loginSpinner" class="hidden animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span id="loginText">Sign In</span>
+                        </span>
+                    </button>
+                    <div class="text-center mt-4">
+                        <p class="text-sm text-gray-600">
+                            Don't have an account? 
+                            <a href="/signup" class="font-medium text-blue-600 hover:text-blue-500">
+                                Sign up
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+       
+
+        async function login() {
+            const button = document.getElementById('loginButton');
+            const spinner = document.getElementById('loginSpinner');
+            const text = document.getElementById('loginText');
+            
+            button.disabled = true;
+            spinner.classList.remove('hidden');
+            text.textContent = 'Processing...';
+            
+            try {
+                const whatsapp = document.getElementById('loginWhatsapp').value;
+                const password = document.getElementById('loginPassword').value;
+
+                const response = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        whatsapp_number: whatsapp,
+                        password: password
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('access_token', data.access_token);
+                    console.log('Token stored:', data.access_token);
+                    window.location.href = '/verify_face';
+                } else {
+                    const data = await response.json();
+                    alert(data.detail || 'Login failed');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('An error occurred during login');
+            } finally {
+                button.disabled = false;
+                spinner.classList.add('hidden');
+                text.textContent = 'Sign In';
+            }
+        }
+    </script>
+</body>
+</html>

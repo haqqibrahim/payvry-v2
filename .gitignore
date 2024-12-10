@@ -10,5 +10,8 @@ frontend/.next/
 frontend/node_modules/
 frontend/next.env.d.ts
 .env.local
+<<<<<<< HEAD
 .vscode/*
+=======
+>>>>>>> 2d98f08d88f45922b46785454f4be2f4d3c65df8
 payvry/*
