@@ -21,4 +21,5 @@ rave_python
 google-generativeai
 
 # Libraries required for dlib
+dlib
 cmake>=3.22.0
