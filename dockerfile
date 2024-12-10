@@ -1,48 +1,48 @@
-# Base image with GPU support
-FROM nvidia/cuda:11.4.1-cudnn8-devel-ubuntu20.04
+# Use Ubuntu 22.04 as the base image
+FROM ubuntu:22.04
 
-# Set the debian frontend to avoid interactive prompts during installation
+# Set non-interactive frontend for apt commands
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies
-RUN apt-get update -y && apt-get install -y \
+# Update and install dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-dev \
     git \
     cmake \
+    gcc \
+    g++ \
     libsm6 \
     libxext6 \
     libxrender-dev \
-    python3 \
-    python3-pip \
-    gcc \
-    python3-tk \
-    ffmpeg \
     libopenblas-dev \
-    liblapack-dev && \
-    apt-get clean
+    liblapack-dev \
+    ffmpeg \
+    curl \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install dlib with CUDA support
+# Install dlib
 RUN git clone https://github.com/davisking/dlib.git && \
     cd dlib && \
-    mkdir build && \
-    cd build && \
-    cmake .. -DDLIB_USE_CUDA=1 -DUSE_AVX_INSTRUCTIONS=1 && \
-    cmake --build . && \
-    cd .. && \
+    mkdir build && cd build && \
+    cmake .. -DDLIB_USE_CUDA=0 -DUSE_AVX_INSTRUCTIONS=1 && \
+    cmake --build . && cd .. && \
     python3 setup.py install && \
     cd .. && rm -rf dlib
 
 # Install Python dependencies
-COPY requirements.txt .
-RUN pip3 install --no-cache-dir -r requirements.txt
+COPY requirements.txt /app/requirements.txt
+RUN pip3 install --no-cache-dir -r /app/requirements.txt
 
 # Set the working directory
 WORKDIR /app
 
-# Copy application files
-COPY . .
+# Copy application files into the image
+COPY . /app
 
-# Expose the application port
+# Expose the port your FastAPI app runs on (default is 8000)
 EXPOSE 8000
 
-# Command to run the application
+# Start the application using Uvicorn
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
