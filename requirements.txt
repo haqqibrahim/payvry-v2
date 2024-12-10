@@ -15,4 +15,10 @@ python-multipart
 email-validator
 aiohttp
 fastapi-mail
+setuptools
 face-recognition
+openai
+httpx
+python-dotenv
+rave_python
+google-generativeai

@@ -48,27 +48,38 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             const token = localStorage.getItem('access_token');
-            const isNewUser = localStorage.getItem('is_new_user');
-            const faceVerified = localStorage.getItem('face_verified');
-            
+            console.log('Token found:', token); // Debug log
+
             if (!token) {
-                window.location.href = '/auth';
+                window.location.href = '/login';
                 return;
             }
-            
-            if (isNewUser) {
-                window.location.href = '/register_face';
-                return;
+
+            try {
+                const response = await fetch('/api/v1/auth/me', {
+                    method: 'GET', // Explicitly set method
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include' // Include credentials
+                });
+                
+                console.log('Auth response:', response.status); // Debug log
+                
+                if (!response.ok) {
+                    throw new Error('Auth failed');
+                }
+
+                const data = await response.json();
+                loadDashboard();
+            } catch (error) {
+                console.error('Auth error:', error); // Debug log
+                localStorage.removeItem('access_token'); // Clear invalid token
+                window.location.href = '/login';
             }
-            
-            if (!faceVerified) {
-                window.location.href = '/verify_face';
-                return;
-            }
-            
-            loadDashboard();
         });
 
         async function loadDashboard() {
@@ -95,9 +106,7 @@
 
         // Logout function
         function logout() {
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('is_new_user');
-            localStorage.removeItem('face_verified');
+            document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
             window.location.href = '/auth';
         }
     </script>

@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Register Face</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -16,7 +18,7 @@
 
             <div class="mt-8 space-y-6">
                 <div class="video-container">
-                    <video id="video" class="w-full h-64 bg-black rounded-lg" autoplay></video>
+                    <video id="video" class="w-full h-64 bg-black rounded-lg" autoplay playsinline muted style="transform: scaleX(-1);"></video>
                     <canvas id="canvas" class="hidden"></canvas>
                 </div>
 
@@ -56,17 +58,47 @@
         // Request access to webcam
         async function startVideo() {
             try {
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: "user",
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
-                    } 
-                });
+                // First try with simpler constraints
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: 'user',
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        },
+                        audio: false
+                    });
+                } catch (frontError) {
+                    console.log('Front camera failed, trying alternative:', frontError);
+                    // If that fails, try without specific constraints
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: false
+                    });
+                }
+
+                // Set up video element
                 video.srcObject = stream;
+                video.setAttribute('playsinline', true);
+                video.setAttribute('autoplay', true);
+                video.setAttribute('muted', true);
+                video.style.transform = 'scaleX(-1)';
+
+                // Make sure video plays
+                try {
+                    await video.play();
+                } catch (playError) {
+                    console.error('Play error:', playError);
+                    // Try playing on user interaction if autoplay fails
+                    video.addEventListener('click', () => {
+                        video.play().catch(console.error);
+                    });
+                }
+
+                console.log('Camera initialized successfully');
             } catch (err) {
-                console.error("Error accessing camera:", err);
-                alert("Unable to access camera. Please ensure you've granted camera permissions.");
+                console.error('Camera initialization error:', err);
+                alert('Camera error: Please ensure camera permissions are granted and try again.');
             }
         }
 
@@ -106,8 +138,6 @@
                             if (stream) {
                                 stream.getTracks().forEach(track => track.stop());
                             }
-                            localStorage.removeItem('is_new_user');
-                            localStorage.setItem('face_verified', 'true');
                             window.location.href = '/dashboard';
                         } else {
                             const data = await response.json();
@@ -130,28 +160,35 @@
         // Start video when page loads
         document.addEventListener('DOMContentLoaded', function() {
             const token = localStorage.getItem('access_token');
-            const isNewUser = localStorage.getItem('is_new_user');
-            const faceVerified = localStorage.getItem('face_verified');
-            
             if (!token) {
-                window.location.href = '/auth';
+                window.location.href = '/login';
                 return;
             }
-            
-            // If not a new user and not verified, go to verify face
-            if (!isNewUser && !faceVerified) {
-                window.location.href = '/verify_face';
-                return;
-            }
-            
-            // If already verified, go to dashboard
-            if (faceVerified) {
-                window.location.href = '/dashboard';
-                return;
-            }
-            
             startVideo();
         });
+
+        async function registerFace(imageData) {
+            try {
+                const formData = new FormData();
+                formData.append('image', imageData);
+                
+                const response = await fetch('/api/v1/auth/register-face', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    window.location.href = '/dashboard';
+                } else {
+                    alert('Face registration failed');
+                }
+            } catch (error) {
+                alert('An error occurred during face registration');
+            }
+        }
     </script>
 </body>
 </html>

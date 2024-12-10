@@ -60,8 +60,16 @@
                 <!-- Sign Up Form -->
                 <div id="signupForm" class="hidden space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                        <input type="text" id="signupName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <label class="block text-sm font-medium text-gray-700">First Name</label>
+                        <input type="text" id="signupFirstName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Last Name</label>
+                        <input type="text" id="signupLastName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Middle Name</label>
+                        <input type="text" id="signupMiddleName" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Email</label>
@@ -74,6 +82,10 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Mobile Number</label>
                         <input type="tel" id="signupMobile" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="08012345678">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">BVN</label>
+                        <input type="text" id="signupBvn" maxlength="11" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your 11-digit BVN">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Password</label>
@@ -127,12 +139,45 @@
         // Add this at the start of your script
         document.addEventListener('DOMContentLoaded', function() {
             const token = localStorage.getItem('access_token');
+            const isNewUser = localStorage.getItem('is_new_user');
             const faceVerified = localStorage.getItem('face_verified');
             
-            // If user is already authenticated and verified, go to dashboard
-            if (token && faceVerified) {
-                window.location.href = '/dashboard';
-                return;
+            // If on auth page
+            if (window.location.pathname === '/auth') {
+                if (token) {
+                    if (isNewUser === 'true') {
+                        window.location.href = '/register_face';
+                    } else if (!faceVerified) {
+                        window.location.href = '/verify_face';
+                    } else {
+                        window.location.href = '/dashboard';
+                    }
+                    break;
+
+                case '/register_face':
+                    // Only allow if new user
+                    if (isNewUser !== 'true') {
+                        window.location.href = '/auth';
+                    }
+                    break;
+
+                case '/verify_face':
+                    // Only allow if not verified
+                    if (isNewUser === 'true') {
+                        window.location.href = '/register_face';
+                    } else if (faceVerified) {
+                        window.location.href = '/dashboard';
+                    }
+                    break;
+
+                case '/dashboard':
+                    // Only allow if fully verified
+                    if (isNewUser === 'true') {
+                        window.location.href = '/register_face';
+                    } else if (!faceVerified) {
+                        window.location.href = '/verify_face';
+                    }
+                    break;
             }
         });
 
@@ -143,22 +188,42 @@
         const signupForm = document.getElementById('signupForm');
         const otpForm = document.getElementById('otpForm');
 
+        console.log('Elements found:', { 
+            loginTab, 
+            signupTab, 
+            loginForm, 
+            signupForm, 
+            otpForm 
+        });
+
+        // Login tab click handler
         loginTab.addEventListener('click', () => {
-            loginTab.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
-            signupTab.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
-            signupTab.classList.add('text-gray-500');
+            console.log('Login tab clicked');
+            // Show login form, hide others
             loginForm.classList.remove('hidden');
             signupForm.classList.add('hidden');
             otpForm.classList.add('hidden');
+            
+            // Update tab styles
+            loginTab.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+            loginTab.classList.remove('text-gray-500');
+            signupTab.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+            signupTab.classList.add('text-gray-500');
         });
 
+        // Signup tab click handler
         signupTab.addEventListener('click', () => {
-            signupTab.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
-            loginTab.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
-            loginTab.classList.add('text-gray-500');
+            console.log('Signup tab clicked');
+            // Show signup form, hide others
             signupForm.classList.remove('hidden');
             loginForm.classList.add('hidden');
             otpForm.classList.add('hidden');
+            
+            // Update tab styles
+            signupTab.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+            signupTab.classList.remove('text-gray-500');
+            loginTab.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+            loginTab.classList.add('text-gray-500');
         });
 
         // OTP input logic
@@ -220,6 +285,7 @@
                 if (response.ok) {
                     const data = await response.json();
                     localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('face_verified', 'false');
                     window.location.href = '/verify_face';
                 } else {
                     const data = await response.json();
@@ -237,14 +303,29 @@
             setButtonLoading('signup', true, 'Creating account...');
             
             try {
-                const name = document.getElementById('signupName').value;
-                const email = document.getElementById('signupEmail').value;
+                const firstName = document.getElementById('signupFirstName').value;
+                const lastName = document.getElementById('signupLastName').value;
+                const middleName = document.getElementById('signupMiddleName').value;
                 const whatsapp = document.getElementById('signupWhatsapp').value;
                 const mobile = document.getElementById('signupMobile').value;
+                const bvn = document.getElementById('signupBvn').value;
                 const password = document.getElementById('signupPassword').value;
+                const email = document.getElementById('signupEmail').value;
 
-                if (!name || !email || !whatsapp || !mobile || !password) {
+                if (!firstName || !lastName || !middleName || !whatsapp || !mobile || !bvn || !password || !email) {
                     alert('Please fill in all fields');
+                    return;
+                }
+
+                // Validate BVN
+                if (!/^\d{11}$/.test(bvn)) {
+                    alert('BVN must be exactly 11 digits');
+                    return;
+                }
+
+                // Add email validation
+                if (!email || !email.includes('@')) {
+                    alert('Please enter a valid email address');
                     return;
                 }
 
@@ -254,10 +335,13 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        full_name: name,
+                        first_name: firstName,
+                        last_name: lastName,
+                        middle_name: middleName,
                         email: email,
                         whatsapp_number: whatsapp,
                         mobile_number: mobile,
+                        bvn: bvn,
                         password: password
                     }),
                 });
@@ -322,7 +406,7 @@
             const phone = document.getElementById('signupPhone').value;
 
             try {
-                const response = await fetch('http://localhost:8000/auth/resend-otp', {
+                const response = await fetch('http://localhost:5000/auth/resend-otp', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -340,6 +424,48 @@
                 alert('An error occurred while resending OTP');
             }
         }
+
+        // Common authentication check function
+        function checkAuth() {
+            const token = localStorage.getItem('access_token');
+            const isNewUser = localStorage.getItem('is_new_user');
+            const faceVerified = localStorage.getItem('face_verified');
+            
+            // If on auth page
+            if (window.location.pathname === '/auth') {
+                if (token) {
+                    if (isNewUser === 'true') {
+                        window.location.href = '/register_face';
+                    } else if (!faceVerified) {
+                        window.location.href = '/verify_face';
+                    } else {
+                        window.location.href = '/dashboard';
+                    }
+                }
+                return; // Stay on auth page if no token
+            }
+            
+            // For other pages, first check token
+            if (!token) {
+                window.location.href = '/auth';
+                return;
+            }
+            
+            // Then check face verification status
+            if (isNewUser === 'true') {
+                if (window.location.pathname !== '/register_face') {
+                    window.location.href = '/register_face';
+                }
+            } else if (!faceVerified) {
+                if (window.location.pathname !== '/verify_face') {
+                    window.location.href = '/verify_face';
+                }
+            } else if (window.location.pathname !== '/dashboard') {
+                window.location.href = '/dashboard';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', checkAuth);
     </script>
 </body>
 </html>
