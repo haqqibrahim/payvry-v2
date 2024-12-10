@@ -77,11 +77,3 @@ async def authorize_transfer_page(
 ):
     return FileResponse("Frontend/templates/authorize.html")
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "app:app",
-        host="0.0.0.0",
-        port=int(os.getenv("PORT", 5000)),
-        reload=True
-    )
