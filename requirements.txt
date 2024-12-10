@@ -18,8 +18,5 @@ face-recognition
 openai
 httpx
 python-dotenv
-<<<<<<< HEAD
-=======
 rave_python
->>>>>>> 2d98f08d88f45922b46785454f4be2f4d3c65df8
 google-generativeai
