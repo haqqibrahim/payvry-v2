@@ -1,16 +1,10 @@
-from sqlalchemy import text
 from database import engine, Base
-from Auth.models import User, OTP  # Import your models
+from Auth.models import User  # Import only the User model
 
 def init_db():
-    # Drop all tables with CASCADE
-    with engine.connect() as connection:
-        connection.execute(text("DROP SCHEMA public CASCADE;"))
-        connection.execute(text("CREATE SCHEMA public;"))
-    
-    # Recreate the tables
-    Base.metadata.create_all(bind=engine)
-    print("Database initialized successfully!")
+    Base.metadata.drop_all(bind=engine)  # Drop all tables
+    Base.metadata.create_all(bind=engine)  # Create all tables
 
 if __name__ == "__main__":
     init_db()
+    print("Database initialized successfully!") 

@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = 'postgresql://payvry_user:7GC6wONvscTxaSmGdUNYxvHt4g4EukzR@dpg-ct7j07pu0jms73ds0dhg-a.oregon-postgres.render.com:5432/payvry'
+DATABASE_URL = 'postgresql://payvry_rs4e_user:m7CvOOny9lpNsByeM7BYlgK9kzLzqBpI@dpg-ctcbm82j1k6c73fdtajg-a.oregon-postgres.render.com/payvry_rs4e'
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set")
 

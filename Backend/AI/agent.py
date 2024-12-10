@@ -20,7 +20,6 @@ from Tools.bank_verification_tool import verify_bank_account
 from Utils.whatsapp_utils import send_whatsapp
 from database import get_db
 from sqlalchemy.orm import Session
-from Auth.models import ChatHistory
 from sqlalchemy import desc
 
 load_dotenv()
