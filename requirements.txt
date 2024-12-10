@@ -1,6 +1,6 @@
 fastapi
-uvicorn
-sqlalchemy
+uvicorn[standard]
+sqlalchemy>=1.4
 psycopg2-binary
 python-dotenv
 pydantic[email]
@@ -8,7 +8,7 @@ alembic
 phidata
 python-jose[cryptography]
 bcrypt==4.0.1
-passlib==1.7.4
+passlib[bcrypt]==1.7.4
 python-multipart
 email-validator
 aiohttp
@@ -17,6 +17,8 @@ setuptools
 face-recognition
 openai
 httpx
-python-dotenv
 rave_python
 google-generativeai
+
+# Libraries required for dlib
+cmake>=3.22.0
