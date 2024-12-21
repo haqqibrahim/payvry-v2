@@ -5,17 +5,18 @@ from . import models, schemas
 from .security import get_password_hash, verify_password, create_access_token, SECRET_KEY, ALGORITHM
 from Utils.whatsapp_utils import send_whatsapp
 from Utils.phone_utils import format_phone_number
+from Utils.face_rekognition import Register_Face, Verify_Face
 import random
 import string
 from datetime import datetime, timedelta
 from fastapi.responses import RedirectResponse
-from Utils.face_recognition import register_face, verify_face
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from Tools.create_account import create_bank_account, BankAccountCreationError
 from Tools.bank_verification_tool import verify_bank_account
 from Tools.bank_transfer_tool import bank_transfer_tool
 import json
+import os
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -117,14 +118,26 @@ async def register_user_face(
     db: Session = Depends(get_db)
 ):
     try:
-        # Read image data
-        image_data = await image.read()
+        # Create temp directory if it doesn't exist
+        os.makedirs('temp', exist_ok=True)
         
-        # Register face using actual user ID
-        face_encoding = await register_face(image_data, str(current_user.id))
+        # Save uploaded file temporarily
+        temp_image_path = f"temp/{image.filename}"
+        with open(temp_image_path, "wb") as buffer:
+            image_data = await image.read()
+            buffer.write(image_data)
         
-        # Update user in database with face encoding
-        current_user.face_encoding = face_encoding
+        # Register face using the temp file path
+        result = Register_Face(str(current_user.id), temp_image_path)
+        
+        # Clean up temp file
+        if os.path.exists(temp_image_path):
+            os.remove(temp_image_path)
+            
+        if isinstance(result, str):  # Error message
+            raise HTTPException(status_code=400, detail=result)
+            
+        # Update user verification status
         current_user.is_verified = True
         
         # Create bank account for the verified user
@@ -175,25 +188,36 @@ async def register_user_face(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/verify-face")
-@router.post("/verify-face")
 async def verify_user_face(
     image: UploadFile = File(...),
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     try:
-        if not current_user.face_encoding:
-            raise HTTPException(status_code=400, detail="No face registered for this user")
+        # if not current_user.face_encoding:
+        #     raise HTTPException(status_code=400, detail="No face registered for this user")
         
-        # Read image data
-        image_data = await image.read()
+         # Create temp directory if it doesn't exist
+        os.makedirs('temp', exist_ok=True)
         
-        # Verify face
-        is_match = await verify_face(image_data, current_user.face_encoding)
+        # Save uploaded file temporarily
+        temp_image_path = f"temp/{image.filename}"
+        with open(temp_image_path, "wb") as buffer:
+            image_data = await image.read()
+            buffer.write(image_data)
         
-        if not is_match:
-            raise HTTPException(status_code=401, detail="Face verification failed")
+        # Register face using the temp file path
+        result = Verify_Face(str(current_user.id), temp_image_path)
+        if result == False:
+            raise HTTPException(status_code=400, detail="Face verification failed")
         
+        # Clean up temp file
+        if os.path.exists(temp_image_path):
+            os.remove(temp_image_path)
+        
+        if isinstance(result, str):  # Error message
+                raise HTTPException(status_code=400, detail=result)
+                
         return {"message": "Face verified successfully"}
     
     except Exception as e:

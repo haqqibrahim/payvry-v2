@@ -163,7 +163,7 @@
                             localStorage.setItem('face_verified', 'true');
                             
                             // Show welcome message
-                            alert(`Hello ${userData.full_name}!`);
+                            //alert(`Hello ${userData.middle_name}!`);
                             
                             window.location.href = '/dashboard';
                         } else {
@@ -200,11 +200,10 @@
                 const data = await response.json();
                 
                 if (data.is_verified) {
-                    window.location.href = '/dashboard';
+                    startVideo();
                     return;
                 }
                 
-                startVideo();
             } catch (error) {
                 console.error('Auth check failed:', error);
                 window.location.href = '/login';

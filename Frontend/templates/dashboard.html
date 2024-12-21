@@ -74,7 +74,7 @@
                 }
 
                 const data = await response.json();
-                loadDashboard();
+                // loadDashboard();
             } catch (error) {
                 console.error('Auth error:', error); // Debug log
                 localStorage.removeItem('access_token'); // Clear invalid token
@@ -107,7 +107,7 @@
         // Logout function
         function logout() {
             document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-            window.location.href = '/auth';
+            window.location.href = '/login';
         }
     </script>
 </body>

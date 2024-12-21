@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = 'postgresql://payvry_rs4e_user:m7CvOOny9lpNsByeM7BYlgK9kzLzqBpI@dpg-ctcbm82j1k6c73fdtajg-a.oregon-postgres.render.com/payvry_rs4e'
+DATABASE_URL = 'postgresql://neondb_owner:tpGb6hod5xSu@ep-fancy-bush-a55uacji.us-east-2.aws.neon.tech/neondb?sslmode=require'
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set")
 
